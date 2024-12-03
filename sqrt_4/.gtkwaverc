@@ -1,0 +1,9 @@
+# Set the time scale to 10 ns
+time_scale 1e-9
+
+# Enable grid lines for better visualization
+enable_horiz_grid 1
+enable_vert_grid 1
+
+# Auto-fit traces when opened
+do_initial_zoom_fit 1
