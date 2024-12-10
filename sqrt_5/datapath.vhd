@@ -17,7 +17,6 @@ entity datapath is
 end datapath;
 
 architecture Structural of datapath is
-    signal sel_addsub   : std_logic;
     signal in1_addsub, in2_addsub, out_addsub : std_logic_vector(N+1 downto 0);
     signal mux_D_out    : std_logic_vector(2*N-1 downto 0); -- Adjusted range to match the intended size
     signal R            : std_logic_vector(N+1 downto 0); -- Adjusted size to align with signals
@@ -100,7 +99,6 @@ begin
         R <= (others => '0');
         Q <= (others => '0');
         D <= (others => '0');
-        sel_addsub <= '0';
     elsif rising_edge(clk) then
         -- Inputs to AddSub
         in1_addsub <= R(N-1 downto 0) & D(2*N-1 downto 2*N-2);
@@ -108,6 +106,6 @@ begin
         D <=  std_logic_vector(shift_left(unsigned(D), 2));
         Q <= Q(N-2 downto 0) & not out_addsub(N+1);
     end if;
-
+end process;
 
 end Structural;
