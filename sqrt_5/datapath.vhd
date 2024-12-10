@@ -25,7 +25,6 @@ architecture Structural of datapath is
     signal D            : std_logic_vector(2*N-1 downto 0);
 begin
 
--- Multiplexer for D
 mux_D : entity work.Mux
     generic map ( 
         N => 2*N
@@ -85,11 +84,6 @@ reg_D : entity work.Reg
         reset => reset
     );
 
--- Inputs to AddSub
-in1_addsub <= R(N-1 downto 0) & D(2*N-1 downto 2*N-2);
-in2_addsub <= Q & R(N+1) & '1';
-D <=  std_logic_vector(shift_left(unsigned(D), 2));
-Q <= Q(N-2 downto 0) & not out_addsub(N+1);
 
 -- Add/Subtract Unit
 AddSub : entity work.AddSub
@@ -99,5 +93,21 @@ AddSub : entity work.AddSub
         sel => R(N+1),
         result => out_addsub
     );
+
+process(clk, reset)
+begin
+    if reset = '1' then
+        R <= (others => '0');
+        Q <= (others => '0');
+        D <= (others => '0');
+        sel_addsub <= '0';
+    elsif rising_edge(clk) then
+        -- Inputs to AddSub
+        in1_addsub <= R(N-1 downto 0) & D(2*N-1 downto 2*N-2);
+        in2_addsub <= Q & R(N+1) & '1';
+        D <=  std_logic_vector(shift_left(unsigned(D), 2));
+        Q <= Q(N-2 downto 0) & not out_addsub(N+1);
+    end if;
+
 
 end Structural;
