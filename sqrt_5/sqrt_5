@@ -16,7 +16,7 @@ entity sqrt_5 is
 end sqrt_5;
 
 architecture Structural of sqrt_5 is
-    signal D_mux, result_mux : std_logic;
+    signal done_sig, start_sig : std_logic;
 begin
     -- Datapath
     CU : entity work.ControlUnit
@@ -24,9 +24,8 @@ begin
             start   => start,
             clk => clk,
             reset => reset,
-            done  => done,
-            sel_D_mux => D_mux, 
-            sel_result_mux => result_mux
+            done  => done_sig,
+            start_out => start_sig
         );
 
     -- Control Unit
@@ -36,7 +35,8 @@ begin
             clk => clk,
             reset => reset,
             result => result,
-            sel_mux_result => result_mux,
-            sel_mux_D => D_mux
+            start_in => start_sig,
+            done => done_sig
         );
+    done <= done_sig;
 end Structural;
