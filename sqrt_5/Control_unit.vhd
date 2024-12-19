@@ -10,8 +10,7 @@ entity ControlUnit is
         clk        : in  std_logic;
         reset      : in  std_logic;
         done       : out std_logic;
-        sel_D_mux : out std_logic;
-        sel_result_mux : out std_logic
+        start_out : out std_logic
     );
 end ControlUnit;
 
@@ -27,39 +26,32 @@ begin
             state <= sleep; 
             done <= '0';
             counter <= N;
-            sel_D_mux <= '0';
-            sel_result_mux <= '0';
+            start_out <= '0';
             
         elsif rising_edge(clk) then
             case state is
                 when sleep =>
-                    sel_D_mux <= '0';
-                    sel_result_mux <= '0';
                     if start = '1' then
                         state <= init;
+                        start_out <= '1';
                     end if;
 
                 when init =>
                     -- Initialisation
-                    sel_D_mux <= '0';
-                    sel_result_mux <= '0';
                     done <= '0';
-					counter <= N-1;
+					counter <= N-2;
 					state <= compute;
+					start_out <= '0';
 
                 when compute => 
                     if counter < 0 then 
                         state <= finished;
+                        done <= '1'; -- Indiquer que le calcul est terminé
                     else
-                        sel_D_mux <= '1';
-                        sel_result_mux <= '1';
                         counter <= counter-1;
                     end if;
 
                 when finished =>
-                    sel_D_mux <= '0';
-                    sel_result_mux <= '1';
-                    done <= '1'; -- Indiquer que le calcul est terminé
                     if start = '0' then
                         state <= sleep;
                         done <= '0';
