@@ -9,103 +9,63 @@ entity datapath is
     port (
         clk             : in  std_logic;
         A               : in  std_logic_vector(2*N-1 downto 0);
-        sel_mux_result  : in  std_logic;
-        sel_mux_D       : in  std_logic;
+        start_in        : in  std_logic;
+        done            : in  std_logic;
         reset           : in  std_logic;
         result          : out std_logic_vector(N-1 downto 0)
     );
 end datapath;
 
-architecture Structural of datapath is
-    signal in1_addsub, in2_addsub, out_addsub : std_logic_vector(N+1 downto 0);
-    signal mux_D_out    : std_logic_vector(2*N-1 downto 0); -- Adjusted range to match the intended size
-    signal R            : std_logic_vector(N+1 downto 0); -- Adjusted size to align with signals
-    signal Q            : std_logic_vector(N-1 downto 0);
-    signal D            : std_logic_vector(2*N-1 downto 0);
+architecture Behavioral of datapath is
+    signal R, out_addsub         : std_logic_vector(N+1 downto 0);
+    signal Q         : std_logic_vector(N-1 downto 0);
+    signal D         : std_logic_vector(2*N-1 downto 0);
+    signal sel_sig   : std_logic;
 begin
-
-mux_D : entity work.Mux
-    generic map ( 
-        N => 2*N
-    )
-    port map (
-        A => A,
-        B => D,
-        sel => sel_mux_D,
-        Y => mux_D_out
-    );
-
--- Multiplexer for result
-mux_result : entity work.Mux
-    generic map ( 
-        N => N
-    )
-    port map (
-        A => (others => '0'),
-        B => Q,
-        sel => sel_mux_result,
-        Y => result
-    );
-
--- Register R
-reg_R : entity work.Reg
-    generic map ( 
-        N_data => N+2
-    )
-    port map (
-        data_in => out_addsub,
-        data_out => R,
-        clk => clk,
-        reset => reset
-    );
-
--- Register Q
-reg_Q : entity work.Reg
-    generic map ( 
-        N_data => N
-    )
-    port map (
-        data_in => Q, 
-        data_out => Q,
-        clk => clk,
-        reset => reset
-    );
-
--- Register D
-reg_D : entity work.Reg
-    generic map ( 
-        N_data => 2*N
-    )
-    port map (
-        data_in => mux_D_out, 
-        data_out => D,
-        clk => clk,
-        reset => reset
-    );
-
 
 -- Add/Subtract Unit
 AddSub : entity work.AddSub
     port map (
-        A => in1_addsub,
-        B => in2_addsub,
-        sel => R(N+1),
+        in1_R => R(N-1 downto 0),
+        in1_D => D(2*N-1 downto 2*N-2),
+        in2_Q => Q,
+        in2_R_MSB => R(N+1),
+        sel    => sel_sig,
         result => out_addsub
     );
 
+-- Process to update registers
 process(clk, reset)
 begin
     if reset = '1' then
-        R <= (others => '0');
+        -- Initialisation des registres lors du reset
         Q <= (others => '0');
         D <= (others => '0');
+        sel_sig <= '1';
+        R <= (others => '0');
+        result <= (others => '0'); -- Optionnel, mais garantit une sortie propre
+        
     elsif rising_edge(clk) then
-        -- Inputs to AddSub
-        in1_addsub <= R(N-1 downto 0) & D(2*N-1 downto 2*N-2);
-        in2_addsub <= Q & R(N+1) & '1';
-        D <=  std_logic_vector(shift_left(unsigned(D), 2));
-        Q <= Q(N-2 downto 0) & not out_addsub(N+1);
+        if start_in = '1' then
+            -- Initialisation avec A au début
+            D <= A;
+            sel_sig <= '0';
+            Q <= (others => '0');
+            R <= (others => '0');
+            result <= (others => '0');
+            
+        elsif done = '1' then
+            -- État final, affectation du résultat
+            result <= Q;
+        else
+            -- Comportement normal
+            D <= std_logic_vector(shift_left(unsigned(D), 2));
+            Q <= Q(N-2 downto 0) & not(out_addsub(N+1));
+            sel_sig <= out_addsub(N+1);
+            R <= out_addsub;
+        end if;                
     end if;
 end process;
 
-end Structural;
+end Behavioral;
+
