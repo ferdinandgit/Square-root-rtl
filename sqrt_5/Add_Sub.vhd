@@ -7,21 +7,23 @@ entity AddSub is
         N : integer := 32
     );
     Port (
-        A      : in  std_logic_vector(N+1 downto 0);
-        B      : in  std_logic_vector(N+1 downto 0);
-        sel    : in  std_logic; -- 0: A - B, 1: A + B
-        Result : out std_logic_vector(N+1 downto 0)
+        in1_R      : in  std_logic_vector(N-1 downto 0);
+        in1_D      : in  std_logic_vector(1 downto 0);
+        in2_Q      : in  std_logic_vector(N-1 downto 0);
+        in2_R_MSB  : in std_logic;
+        sel        : in  std_logic; -- 0: A - B, 1: A + B
+        Result     : out std_logic_vector(N+1 downto 0)
     );
 end AddSub;
 
 architecture Behavioral of AddSub is
 begin
-    process(A, B, sel)
+    process(in1_R,in1_D,in2_Q,in2_R_MSB, sel)
     begin
         if sel = '1' then
-            Result <= std_logic_vector(unsigned(A) + unsigned(B));
+            Result <= std_logic_vector(unsigned(in1_R & in1_D) + unsigned(in2_Q & in2_R_MSB & '1'));
         else
-            Result <= std_logic_vector(unsigned(A) - unsigned(B));
+            Result <= std_logic_vector(unsigned(in1_R & in1_D) - unsigned(in2_Q & in2_R_MSB & '1'));
         end if;
     end process;
 end Behavioral;
