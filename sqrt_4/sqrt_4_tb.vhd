@@ -1,67 +1,117 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use ieee.math_real.uniform;
+use ieee.math_real.floor;
 
-entity sqrt_4 is 
-	generic(
-	N: integer := 32 );
-	port(
-	clk,start,reset: in std_logic;
-	A: in std_logic_vector (2*N-1 downto 0);
-	Result: out std_logic_vector (N-1 downto 0);
-	done: out std_logic
-	);
-end sqrt_4; 
+entity sqrt_4_tb is
+    -- Pas de ports pour un testbench
+end sqrt_4_tb;
 
-architecture rtl of sqrt_4 is
-	type signed_array is array(0 to N) of signed(2*N-1 downto 0);
-	signal start_pipeline : std_logic_vector(N downto 0);
-	signal pipeline_R: signed_array;
-	signal pipeline_Z: signed_array;
-	signal pipeline_D: signed_array;
+architecture Behavioral of sqrt_4_tb is
+    -- Paramètres génériques
+    constant n : integer := 32;
 
+    -- Composant à tester
+    component sqrt_4
+         generic (
+        N : integer -- Nombre de bits pour la partie entière de sqrtA
+    );
+    Port (
+        clk   : in  std_logic; -- Horloge
+        reset : in  std_logic; -- Reset synchrone
+        start   : in  std_logic; -- start the process
+        done   : out  std_logic; -- sqrt calculée
+        A     : in  std_logic_vector(2*N-1 downto 0); -- Entrée sur 2N bits
+        Result : out std_logic_vector(N-1 downto 0)  -- Racine carrée sur N bits
+    );
+    end component sqrt_4;
 
+    -- Signaux de test
+    signal clk   : std_logic := '0';  -- Horloge
+    signal reset : std_logic := '1';  -- Réinitialisation active au
+    signal start : std_logic := '0';
+    signal done : std_logic := '0';
+    signal a     : std_logic_vector(2*n-1 downto 0) := (others => '0'); -- Entrée
+    signal result : std_logic_vector(n-1 downto 0); -- Sortie
+    
+    signal start_time : time := 0 ns;
+    signal finish_time : time := 0 ns;
+
+    constant clk_period : time := 10 ns;
+    constant wait_time : time := 500 ns;
+    
 begin
-		
-	process(clk,reset)
-		variable temp: signed(4*N-1 downto 0);
-		variable R: signed(2*N-1 downto 0);
-		
-		begin	
-		if reset = '1' then
-		 	pipeline_D <= (others => (others => '0'));
-			pipeline_R <= (others => (others => '0'));
-			pipeline_Z <= (others => (others => '0'));
-			start_pipeline <= (others => '0');
-			R := (others => '0');
-		end if;
+    -- Génération de l'horloge
+    clk_process : process
+    begin
+        while True loop
+            clk <= '0';
+            wait for clk_period / 2;
+            clk <= '1';
+            wait for clk_period / 2;
+        end loop;
+    end process;
 
-		if rising_edge(clk) then 
-			pipeline_D(0) <= signed(A);
-			for k in 0 to N-1 loop
-				if pipeline_R(k) >= 0 then 
-					temp := ( pipeline_R(k) sll 2) + 
-      		(pipeline_D(k) srl (2*N-2)) - 
-      		(4 * pipeline_Z(k) + 1);
-      		R := temp(2*N-1 downto 0);
-    		else 
-					temp := (pipeline_R(k) sll 2) + 
-      		(pipeline_D(k) srl (2*N-2)) + 
-      		(4 * pipeline_Z(k) + 3);	
-      		R := temp(2*N-1 downto 0);
-    		end if;
-    		pipeline_R(k+1) <= R;
+    -- Instanciation du composant
+    uut: sqrt_4
+        generic map (N => n)
+        port map (
+            clk   => clk,
+            reset => reset,
+            A     => a,
+            Result => result,
+            start => start,
+            done => done
+        );
 
-				if R >= 0 then
-      		pipeline_Z(k+1) <= (pipeline_Z(k) sll 1) + 1;
-    		else
-      		pipeline_Z(k+1) <= pipeline_Z(k) sll 1;     
-    		end if;
-      	pipeline_D(k+1) <= pipeline_D(k) sll 2;
-    	end loop;	
-    Result <= std_logic_vector(pipeline_Z(N)(N-1 downto 0));
-	start_pipeline <= start_pipeline(N-1 downto 0) & start;
-    done <= start_pipeline(N);
-  	end if; 
-	end process;
-end rtl; 
+    -- Processus de génération des stimuli
+    stim_proc: process
+    variable latency_ns : integer := 0;
+    variable seed1 : positive;
+    variable seed2 : positive;
+    variable x : real;
+    variable int_value : integer;
+    variable y : integer;
+    begin
+        seed1 := 1;
+        seed2 := 1;
+
+        -- Initialisation : Activer le reset
+        reset <= '1';
+        start <= '0';
+        a <= std_logic_vector(to_unsigned(0, 2*N));
+        wait for clk_period;
+        reset <= '0'; -- Désactiver le reset
+        wait for clk_period;
+        
+        for n in 1 to 60 loop
+            -- Générer un nombre aléatoire
+            uniform(seed1, seed2, x);
+            y := integer(floor(x * 10000000.0));
+            A <= std_logic_vector(to_unsigned(y, A'length));
+            wait for clk_period;
+        end loop;
+        
+        -- Cas de test 1 : Racine carrée de 16
+        a <= std_logic_vector(to_unsigned(16, 2*N));
+        start <= '1';
+        wait for clk_period;
+        
+        for n in 1 to 60 loop
+            -- Générer un nombre aléatoire
+            uniform(seed1, seed2, x);
+            y := integer(floor(x * 10000000.0));
+            A <= std_logic_vector(to_unsigned(y, A'length));
+            wait for clk_period;
+        end loop;
+        
+        
+        
+        -- Fin des tests
+        reset <= '1';
+        a <= std_logic_vector(to_unsigned(0, 2*N));
+        wait;
+    end process;
+
+end Behavioral;
