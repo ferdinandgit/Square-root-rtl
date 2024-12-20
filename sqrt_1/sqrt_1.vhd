@@ -41,7 +41,6 @@ begin
             xn1_temp := std_logic_vector(shift_right(resize(
                             (unsigned(xn0_temp)  + unsigned(A) / unsigned(xn0_temp)), 2 * N),1));
             converged <= '0';
-            Result <= (others => '0');
             xn0 <= xn0_temp;
             xn1 <= xn1_temp;
         elsif converged = '0' and start = '1' then
@@ -61,7 +60,7 @@ begin
             -- Mise à jour des signaux internes
             xn1 <= xn1_temp;
             xn0 <= xn0_temp;
-            Result <= std_logic_vector(resize(unsigned(xn1_temp), N));
+            --Result <= std_logic_vector(resize(unsigned(xn1_temp), N));
         elsif converged = '1' then
             Result <= std_logic_vector(resize(unsigned(xn1), N));
         end if;
