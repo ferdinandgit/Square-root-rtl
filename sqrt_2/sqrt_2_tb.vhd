@@ -29,7 +29,7 @@ architecture Behavioral of sqrt_2_tb is
     signal clk   : std_logic := '0';  -- Horloge
     signal reset : std_logic := '1';  -- Réinitialisation active au
     signal start : std_logic := '0';
-    signal finished : std_logic := '0';
+    signal done : std_logic := '0';
     signal a     : std_logic_vector(2*n-1 downto 0) := (others => '0'); -- Entrée
     signal result : std_logic_vector(n-1 downto 0); -- Sortie
 
@@ -57,7 +57,7 @@ begin
             A     => a,
             Result => result,
             start => start,
-            done => finished
+            done => done
         );
 
     -- Processus de génération des stimuli
@@ -68,55 +68,55 @@ begin
         a <= std_logic_vector(to_unsigned(0, 2*N));
         wait for clk_period;
         reset <= '0'; -- Désactiver le reset
-        wait for clk_period;
+        wait for 2*clk_period;
         
         -- Cas de test 1 : Racine carrée de 16
         a <= std_logic_vector(to_unsigned(16, 2*N));
         start <= '1';
-        wait for wait_time; -- Attendre suffisamment de temps pour convergence
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
 
         -- Cas de test 2 : Racine carrée de 64
         a <= std_logic_vector(to_unsigned(64, 2*N));
         start <= '1';
-        wait for wait_time;
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
 
         -- Cas de test 3 : Racine carrée de 0
         a <= std_logic_vector(to_unsigned(0, 2*N));
         start <= '1';
-        wait for wait_time;
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
         
         -- Cas de test 4 : Racine carrée de 4
         a <= std_logic_vector(to_unsigned(4, 2*N));
         start <= '1';
-        wait for wait_time; -- Attendre suffisamment de temps pour convergence
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
 
         a <= std_logic_vector(to_unsigned(1, 2*N));
         start <= '1';
-        wait for wait_time;
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
         
         -- Cas de test 5 : Racine carrée de 512
         a <= std_logic_vector(to_unsigned(512, 2*N));
         start <= '1';
-        wait for wait_time;
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
         
          -- Cas de test 8 : Racine carrée de 5499030
         a <= std_logic_vector(to_unsigned(5499030, 2*N));
         start <= '1';
-        wait for wait_time;
+        wait until done = '1';
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
 
         
         -- Cas de test 9 : Racine carrée de 1194877489
@@ -124,7 +124,7 @@ begin
         start <= '1';
         wait for wait_time;
         start <= '0';
-        wait for clk_period;
+        wait for 2*clk_period;
 
         -- Fin des tests
         wait;
